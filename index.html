@@ -37,15 +37,6 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
-    .radio-group {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 10px;
-    }
-    .radio-group label {
-      font-weight: normal;
-    }
     button {
       width: 100%;
       padding: 12px;
@@ -73,22 +64,20 @@
           action="https://docs.google.com/forms/d/e/1FAIpQLSdBoA5gi7eHVmce9QvVyXm_0B0CUz6C6DKX_9FOCFeiI3OXew/formResponse"
           method="POST"
           target="hidden_iframe">
-      <div class="radio-group">
-        <label><input type="radio" name="locationType" value="B架位" id="radioB"> B架位</label>
-        <label><input type="radio" name="locationType" value="線邊" id="radioLine"> 線邊</label>
-        <label><input type="radio" name="locationType" value="成品倉" id="radioProd"> 成品倉</label>
-      </div>
-      
+
       <button type="submit" id="submitBtn">儲存</button>
+
       <label for="part">料號標籤：</label>
       <input type="text" name="entry.1506120666" id="part" required pattern=".*" />
 
       <label for="qty">尾數箱數或盒數(滿板空白)：</label>
       <input type="text" inputmode="numeric" name="entry.1517289801" id="qty" />
 
-      <label for="position">儲位 (僅B架需手動輸入)：</label>
-      <input type="text" id="position" />
+      <label for="position">儲位：</label>
+      <!-- 若你不想必填：把 required 拿掉即可 -->
+      <input type="text" id="position" required />
 
+      <!-- 實際送到 Google Form 的儲位欄位 -->
       <input type="hidden" name="entry.904480318" id="positionHidden" />
     </form>
 
@@ -100,15 +89,12 @@
     let submitted = false;
 
     document.addEventListener("DOMContentLoaded", function () {
-      const form = document.getElementById("dataForm");
       const partInput = document.getElementById("part");
       const qtyInput = document.getElementById("qty");
       const positionInput = document.getElementById("position");
       const positionHidden = document.getElementById("positionHidden");
-
-      const radioB = document.getElementById("radioB");
-      const radioLine = document.getElementById("radioLine");
-      const radioProd = document.getElementById("radioProd");
+      const submitBtn = document.getElementById("submitBtn");
+      const successMsg = document.getElementById("successMsg");
 
       // 聚焦第一欄
       partInput.focus();
@@ -120,39 +106,33 @@
           qtyInput.focus();
         }
       });
+
       qtyInput.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           e.preventDefault();
+          positionInput.focus();
         }
       });
 
-      // 單選互斥 (保險設計，實際 radio 已自帶互斥功能)
-      [radioB, radioLine, radioProd].forEach(radio => {
-        radio.addEventListener("change", () => {
-          if (radio !== radioB) positionInput.value = ""; // 只允許 B 架輸入顯示
-        });
+      positionInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          // 讓 Enter 直接送出
+          e.preventDefault();
+          submitBtn.click();
+        }
       });
 
-      // 提交前處理儲位
-      document.getElementById("submitBtn").addEventListener("click", function () {
-        if (radioB.checked) {
-          positionHidden.value = positionInput.value;
-        } else if (radioLine.checked) {
-          positionHidden.value = "JA14#temp";
-        } else if (radioProd.checked) {
-          positionHidden.value = "JA14#P11";
-        } else {
-          positionHidden.value = "";
-        }
-
+      // 提交前：儲位一律取輸入欄位
+      submitBtn.addEventListener("click", function () {
+        positionHidden.value = positionInput.value || "";
         submitted = true;
 
-        // 清空料號與箱數，保留勾選與儲位
+        // 清空：料號、箱數、儲位（若你要保留儲位不清空，把 positionInput 那行註解掉）
         setTimeout(() => {
           partInput.value = "";
           qtyInput.value = "";
           positionInput.value = "";
-          document.getElementById("successMsg").style.display = "block";
+          successMsg.style.display = "block";
           partInput.focus();
         }, 500);
       });
